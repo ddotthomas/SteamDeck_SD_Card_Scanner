@@ -2,16 +2,20 @@ use dirs;
 use iced::widget::{button, column, container, row, scrollable, text};
 use iced::widget::{Button, Column, Container};
 use iced::{window, Alignment, Color, Element, Length, Renderer, Sandbox, Settings, Theme};
-use std::{fs, path::PathBuf, collections::HashMap};
+use std::{fs, path::PathBuf, process};
 
 mod scanning;
 
 use scanning::{Card, Game};
 
+
+
 fn main() -> iced::Result {
+    let mut size = (1280, 800);
     App::run(Settings {
         window: window::Settings { 
-            size: (1280, 800),
+            size,
+            max_size: Some((1280,800)),
             ..window::Settings::default()
         },
         ..Settings::default()
@@ -28,7 +32,9 @@ impl Sandbox for App {
 
     fn new() -> App {
         App {
-            pages: vec![Page::List(get_card_data())],
+            pages: vec![
+                Page::List(get_card_data()),
+            ],
             current: 0,
         }
     }
@@ -46,15 +52,17 @@ impl Sandbox for App {
                 Page::test_list(&mut self.pages[self.current]);
             }
             Message::ScanCard => Page::scan_card(&mut self.pages[self.current]),
+            Message::Exit => process::exit(0),
         }
     }
 
     fn view(&self) -> Element<Message> {
         let mut controls = iced::widget::column(vec![
-            text("Steam Deck\nSD Card Scanner").into(),
+            text("Steam Deck\nSD Card Scanner").size(25).into(),
             button("Scan Card").on_press(Message::ScanCard).into(),
-            button("Test List").on_press(Message::TestList).into(),
-            button("Clear List").on_press(Message::ClearList).into(),
+            // button("Test List").on_press(Message::TestList).into(),
+            // button("Clear List").on_press(Message::ClearList).into(),
+            button("Exit").on_press(Message::Exit).into(),
         ])
         .padding(20)
         .align_items(Alignment::Center);
@@ -72,6 +80,7 @@ pub enum Message {
     ClearList,
     TestList,
     ScanCard,
+    Exit,
 }
 
 pub enum Page {
@@ -86,7 +95,7 @@ impl<'a> Page {
     }
 
     fn list(list: &'a Vec<Card>) -> Column<'a, Message> {
-        column(create_card_list(list)).width(Length::Fill)
+        column(create_card_and_games_list(list)).width(Length::Fill)
     }
 
     fn test_list(&mut self) {
@@ -119,7 +128,7 @@ impl<'a> Page {
     }
 }
 
-fn create_card_list(list: &Vec<Card>) -> Vec<Element<Message>> {
+fn create_card_and_games_list(list: &Vec<Card>) -> Vec<Element<Message>> {
     // Creates the list of cards and their games underneath each one for the iced GUI
     let mut return_list: Vec<Element<Message>> = vec![];
 
@@ -158,6 +167,5 @@ fn get_card_data() -> Vec<Card> {
 
     list
 }
-
 
 
