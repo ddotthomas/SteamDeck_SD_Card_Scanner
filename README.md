@@ -35,6 +35,6 @@ Then when you launch the program, it will scan the current inserted SD Card and 
 
 ## Support
 
-If you would like to support the project feel free to make a pull request with improvements or changes, or consider supporting me on [Patreon](patreon.com/ddotthomas)
+If you would like to support the project feel free to make a pull request with improvements or changes, or consider supporting me on [Patreon](https://www.patreon.com/ddotthomas)
 
 
