@@ -28,7 +28,7 @@ Then when you launch the program, it will scan the current inserted SD Card and 
 
 - First, download Rust, I recommend using [Rustup](https://www.rust-lang.org/tools/install)
 - Update Rust ```rustup update```
-- Clone the repository, ```https://github.com/ddotthomas/SteamDeck_SD_Card_Scanner```
+- Clone the repository, ```git clone https://github.com/ddotthomas/SteamDeck_SD_Card_Scanner```
 - Switch to the new Directory and install ```cd SteamDeck_SD_Card_Scanner; cargo build --release```
 - Look for the binary in the ```target/release``` directory titled "steamdeck_sd_card_scanner"
 - I recommend moving the binary to ```~/.local/bin/``` but you can leave it anywhere you want when you add it as a Non-Steam Game
