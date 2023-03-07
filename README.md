@@ -2,7 +2,7 @@
 
  An application to help you keep track of the different games you have on your SD Cards. If you ever found yourself wondering if you already have a game installed on a different SD Card then this is for you.
 
-<img alt="SD Card Scanner" src="https://i.imgur.com/NJYFN3t.jpg">
+<img alt="SD Card Scanner" src="https://i.imgur.com/7x6iNhv.jpg" width=650>
 
 ## How to use:
 
