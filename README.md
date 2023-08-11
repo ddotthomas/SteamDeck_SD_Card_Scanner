@@ -30,7 +30,6 @@ sd/other games/heroic/
 ## Things to be added or improved/ known issues
 
 - There's currently an issue where it looks like gamescope sees the application at a different resolution than it actually is, more info [here](https://www.reddit.com/r/SteamDeck/comments/10jk36q/having_issues_with_the_windows_size_while/). I recommend switching the controller layout to the "Web Browser" scheme provided by Valve. Otherwise, the mouse can't make it to the scroll bar on the right side to scroll down.
-- Let the program scan and add Non-Steam Games to the list. (Lutris and Heroic)
 - Allow the user to search for a game, filtering the list
 - Add a settings page, allow the user some control over how the cards are identified, scanned, and more
 - Make a better UI
