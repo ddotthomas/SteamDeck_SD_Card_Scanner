@@ -8,7 +8,7 @@
 
 - Switch to Desktop mode to download and install
 - Download the pre-compiled binary from the [Releases](https://github.com/ddotthomas/SteamDeck_SD_Card_Scanner/releases) or compile your own
-
+- In file browser, right click the downloaded binary (steamdeck_sd_card_scanner) go to its Properties; then go to the Permissions tab and check the 'Is Executable' box
 - Add the downloaded binary as a Non-Steam Game
 
 <img alt="Non-Steam Game" src="https://snowydunestorage.blob.core.windows.net/web/pinmore/howto/non-steam-1.png">
