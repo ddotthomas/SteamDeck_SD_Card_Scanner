@@ -8,7 +8,7 @@
 
 - Switch to Desktop mode to download and install
 - Download the pre-compiled binary from the [Releases](https://github.com/ddotthomas/SteamDeck_SD_Card_Scanner/releases) or compile your own
-
+- In file browser, right click the downloaded binary (steamdeck_sd_card_scanner) go to its Properties; then go to the Permissions tab and check the 'Is Executable' box
 - Add the downloaded binary as a Non-Steam Game
 
 <img alt="Non-Steam Game" src="https://snowydunestorage.blob.core.windows.net/web/pinmore/howto/non-steam-1.png">
@@ -30,7 +30,6 @@ sd/other games/heroic/
 ## Things to be added or improved/ known issues
 
 - There's currently an issue where it looks like gamescope sees the application at a different resolution than it actually is, more info [here](https://www.reddit.com/r/SteamDeck/comments/10jk36q/having_issues_with_the_windows_size_while/). I recommend switching the controller layout to the "Web Browser" scheme provided by Valve. Otherwise, the mouse can't make it to the scroll bar on the right side to scroll down.
-- Let the program scan and add Non-Steam Games to the list. (Lutris and Heroic)
 - Allow the user to search for a game, filtering the list
 - Add a settings page, allow the user some control over how the cards are identified, scanned, and more
 - Make a better UI

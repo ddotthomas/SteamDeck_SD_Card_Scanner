@@ -8,28 +8,38 @@ use std::{
     str,
 };
 
+/// Struct used to organize all the SD Cards data
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Card {
+    /// The UUID of the card, used to identify and save the cards info
     pub uuid: String,
+    /// The SD card's name, can be set by the user. Otherwise, it is named '
     pub name: String,
+    /// The list of Steam Games
     pub games: Vec<Game>,
+    /// The Heroic Games library if one was found
     pub heroic: Option<OtherLibrary>,
+    /// The Lutris library if one was found
     pub lutris: Option<OtherLibrary>,
 }
 
-// new idea again, have lutris and heroic be an Option Vec<Game> to then both label and display on the list, can have nice H3 headers labeling the different libraries as steam or otherwise.
-
+/// Struct used to organize any data about a game found in a library folder
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Game {
+    /// The game's folder name
     pub name: String,
 }
 
+/// Struct for game other game libraries that aren't Steam, Lutris and Heroic for now
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct OtherLibrary {
+    /// The path of the libraries folder, will be used to scan the already found folder and skip searching for it again.
     path: PathBuf,
+    /// List of games found in the library's folder
     pub games: Vec<Game>,
 }
 
+/// Enum used to tell different functions what library to work on
 #[derive(Copy, Clone)]
 enum LibraryType {
     Lutris,
@@ -38,33 +48,34 @@ enum LibraryType {
     Game,
 }
 
+/// The default path to Steam library folder (steamapps/common)
 pub const STEAM_DIR: &'static str = "/run/media/mmcblk0p1/steamapps/common";
-pub const SD_DIR: &'static str = "/run/media/mmcblk0p1";
+/// The default path to the SD card's root folder
+pub const SD_ROOT: &'static str = "/run/media/mmcblk0p1";
 
-/// Function updates the currently inserted SD card game data to the passed in list
+/// Modifies the passed in list with the currently inserted SD card game data
 pub fn add_current_card(list: &mut Vec<Card>) {
-    //   Instead of checking if the card is on the list, just always update whatever info is at that UUID,
-    // Now the function can update the games list and do two things at once
-    let current_card_uuid = match get_uuid() {
-        Some(uuid) => uuid,
-        None => {
-            println!("Couldn't get card's UUID, is one inserted?");
-            return;
-        }
-    };
+    // Instead of checking if the card is on the list, just always update whatever info is at that UUID,
+    // Now the function can update the games list while scanning
+
     let mut cards: HashMap<String, Card> = list.iter().fold(HashMap::new(), |mut map, card| {
         // label the list of cards by their uuid
         map.insert(card.uuid.clone(), card.clone());
         map
     });
 
-    match cards.get_mut(&current_card_uuid) {
-        // get a mutable reference to the card currently in the list
+    match cards.get_mut(&if let Some(uuid) = get_uuid() {
+        uuid
+    } else {
+        println!("Couldn't get card's UUID, is one inserted?");
+        return;
+    }) {
         Some(card) => {
-            *card = match scan_card(Some(list)) {
+            // get a mutable reference (card) to the currently inserted SD card list item
+
+            if let Some(scanned_card) = scan_card(Some(list)) {
                 // If we find a card, update its data with the new scanned data
-                Some(scanned_card) => scanned_card,
-                None => card.clone(), // if for some reason we could get the cards uuid but now cant scan new info from it,
+                *card = scanned_card
             }
         }
         None => {
@@ -80,7 +91,6 @@ pub fn add_current_card(list: &mut Vec<Card>) {
             cards.insert(scanned_card.uuid.clone(), scanned_card);
         }
     }
-
     *list = cards.values().fold(vec![], |mut vec, entry| {
         // Move the values from the hashmap back into the list
         vec.push(entry.clone());
@@ -98,6 +108,8 @@ pub fn scan_card(list: Option<&Vec<Card>>) -> Option<Card> {
         }
     };
 
+    // Possibly improve the speed of getting the cards name,
+    // look into just making the first uuid matched found the name instead of pushing it to a list and then checking the list's length
     let name = match list {
         Some(list) => {
             let saved_card: Vec<Card> =
@@ -109,23 +121,23 @@ pub fn scan_card(list: Option<&Vec<Card>>) -> Option<Card> {
                     });
 
             if saved_card.len() == 1 {
+                // If the card was saved before, grab its saved name
                 saved_card[0].name.clone()
-            }
-            // If the card was saved before, grab its saved name
-            else {
+            } else {
+                // otherwise call it `SD Card #` adding 1 to the amount of cards scanned so far
                 format!("SD Card {}", list.len() + 1)
-            } // otherwise add 1 number to the amount of current cards
+            }
         }
 
         None => String::from("SD Card 1"),
     };
 
-    println!("Looking for games at {}", STEAM_DIR);
     let games = find_games(&PathBuf::from(STEAM_DIR))?;
 
     let (lutris, heroic) = find_other_game_folders();
 
     let card = Card {
+        // Collect all the data for the card before returning it from the function
         uuid,
         name,
         games,
@@ -136,6 +148,7 @@ pub fn scan_card(list: Option<&Vec<Card>>) -> Option<Card> {
     Some(card)
 }
 
+/// Runs the `lsblk` command on the system to get the UUID for the SD Card
 pub fn get_uuid() -> Option<String> {
     let output = match Command::new("lsblk")
         .arg("-o")
@@ -192,7 +205,8 @@ pub fn get_saved_data() -> Option<Vec<Card>> {
         match serde_json::from_str(fs::read_to_string(config_loc).unwrap().as_str()) {
             Ok(json) => json,
             Err(e) => {
-                eprintln!("Problem parsing json file ~/.config/sdscannersave.json\n{e}"); // Print an error if the contents were modified so that they don't match the Vec<Card> type
+                // Print an error if the contents were modified so that they don't match the Vec<Card> type
+                eprintln!("Problem parsing json file ~/.config/sdscannersave.json\n{e}");
                 return None;
             }
         };
@@ -200,9 +214,9 @@ pub fn get_saved_data() -> Option<Vec<Card>> {
     Some(card_data)
 }
 
-/// Scan the passed in folder for all folders it contains which have their file name saved into a Game struct; returns None if there was an error reading the game's directory
+/// Scans the passed in folder for all the game's folders inside. Returns None if there was an error reading the game's directory
 fn find_games(search_dir: &Path) -> Option<Vec<Game>> {
-    let list: Vec<Game> = match fs::read_dir(search_dir) {
+    let mut list: Vec<Game> = match fs::read_dir(search_dir) {
         Ok(entry) => entry,
         Err(e) => {
             eprintln!("Couldn't read game directory: {}", e);
@@ -213,15 +227,18 @@ fn find_games(search_dir: &Path) -> Option<Vec<Game>> {
     .map(|item| item.path())
     .filter(|path| path.is_dir()) // Make sure the item in the folder is directory, removes things like dll files
     .map(|path| path.file_name().unwrap().to_str().unwrap().to_string())
-    .map(|file| Game { name: file }) // Get the folders name for the Game data, add that data to a list
+    .map(|file_name| Game { name: file_name }) // Get the folders name for the Game data, add that data to a list
     .fold(vec![], |mut vec, entry| {
         vec.push(entry);
         vec
     });
 
+    list.sort_by_key(|game| game.name.to_ascii_lowercase());
+
     Some(list)
 }
 
+/// Saves the list of Card data into a json file into the user's .config folder. (~/.config/sdscannersave.json)
 pub fn save_data(list: &Vec<Card>) {
     let save_data_path: PathBuf =
         PathBuf::from(dirs::config_dir().unwrap()).join("sdscannersave.json");
@@ -234,7 +251,7 @@ pub fn save_data(list: &Vec<Card>) {
     }
 }
 
-/// Scan for Lutris and Heroic libraries and return them as a hashmap (k: PathBuf,v: Vec<Game>)
+/// Scan for Lutris and Heroic libraries and return them as a tuple (lutris, heroic)
 fn find_other_game_folders() -> (Option<OtherLibrary>, Option<OtherLibrary>) {
     let lutris: Option<OtherLibrary> = search_and_scan_folder(LibraryType::Lutris);
     let heroic: Option<OtherLibrary> = search_and_scan_folder(LibraryType::Heroic);
@@ -246,13 +263,13 @@ fn find_other_game_folders() -> (Option<OtherLibrary>, Option<OtherLibrary>) {
 fn search_and_scan_folder(t: LibraryType) -> Option<OtherLibrary> {
     let mut library = OtherLibrary::default();
 
-    match scan_folder_for_library(SD_DIR, t) {
+    match scan_folder_for_library(SD_ROOT, t) {
         Some(dirs) if dirs.len() == 1 => {
             library.path = dirs[0].clone();
         }
 
         Some(dirs) if dirs.len() == 0 => {
-            match scan_folder_for_library(SD_DIR, LibraryType::Other) {
+            match scan_folder_for_library(SD_ROOT, LibraryType::Other) {
                 Some(dirs) if dirs.len() >= 1 => {
                     for dir in dirs {
                         match scan_folder_for_library(dir.to_str().unwrap(), t) {
@@ -269,7 +286,7 @@ fn search_and_scan_folder(t: LibraryType) -> Option<OtherLibrary> {
                 }
                 // Right now I'm only searching for folders that have the word "games" or "other" for a lutris or heroic folder, this happens if lutris and heroic weren't found at the SD card's root which I imagine should be the common configuration
                 Some(dirs) if dirs.len() == 0 => {
-                    match scan_folder_for_library(SD_DIR, LibraryType::Game) {
+                    match scan_folder_for_library(SD_ROOT, LibraryType::Game) {
                         Some(dirs) if dirs.len() >= 1 => {
                             for dir in dirs {
                                 match scan_folder_for_library(dir.to_str().unwrap(), t) {
@@ -303,11 +320,9 @@ fn search_and_scan_folder(t: LibraryType) -> Option<OtherLibrary> {
         return None;
     }
 
-    println!("Looking for games at {}", library.path.to_string_lossy());
+    // Had to convert the pathbuf into a str then back into a pathbuf to get it to work for some reason
     let path_fix = library.path.to_str().unwrap();
     library.games = find_games(&PathBuf::from(path_fix))?;
-
-    println!("Found other game: {:?}", library.games);
 
     Some(library)
 }
