@@ -7,6 +7,7 @@ use std::process;
 pub struct App {
     pages: Vec<Page>,
     current: usize,
+    card_data: Vec<Card>,
 }
 
 impl Application for App {
@@ -18,8 +19,9 @@ impl Application for App {
     fn new(_flags: ()) -> (App, iced::Command<Message>) {
         (
             App {
-                pages: vec![Page::List(get_card_data())],
+                pages: vec![Page::List],
                 current: 0,
+                card_data: get_card_data(),
             },
             Command::none(),
         )
@@ -31,13 +33,7 @@ impl Application for App {
 
     fn update(&mut self, event: Message) -> Command<Self::Message> {
         match event {
-            Message::ClearList => {
-                Page::clear_list(&mut self.pages[self.current]);
-            }
-            Message::TestList => {
-                Page::test_list(&mut self.pages[self.current]);
-            }
-            Message::ScanCard => Page::scan_card(&mut self.pages[self.current]),
+            Message::ScanCard => crate::scanning::add_current_card(&mut self.card_data),
             Message::Exit => process::exit(0),
             Message::Fullscreen => return window::toggle_maximize(),
         }
@@ -57,16 +53,6 @@ impl Application for App {
             )
             .padding(10)
             .into(),
-            //container(button(text("Test List").size(33)).padding(12).on_press(Message::TestList))
-            //    .padding(10)
-            //    .into(),
-            //container(
-            //    button(text("Clear List").size(33))
-            //        .padding(12)
-            //        .on_press(Message::ClearList),
-            //)
-            //.padding(10)
-            //.into(),
             container(
                 button(text("Exit").size(33))
                     .padding(12)
@@ -85,7 +71,7 @@ impl Application for App {
         .padding(12)
         .align_items(Alignment::Center);
 
-        let content = self.pages[self.current].view();
+        let content = self.pages[self.current].view(&self.card_data);
 
         container(row!(controls, scrollable(content)))
             .width(Length::Fill)
@@ -101,10 +87,6 @@ impl Application for App {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Message {
-    /// Used to test app. Removes all the data/items from the Iced GUI list
-    ClearList,
-    /// Creates a test card with a couple games, also used to test the app
-    TestList,
     /// Activates the scan card function manually, called when 'Scan Card' is clicked
     ScanCard,
     /// Exit the application, called when 'Exit' is clicked
@@ -114,51 +96,18 @@ pub enum Message {
 }
 
 pub enum Page {
-    List(Vec<Card>),
+    List,
 }
 
 impl<'a> Page {
-    fn view(&self) -> Element<Message> {
+    fn view(&'a self, card_data: &'a Vec<Card>) -> Element<Message> {
         match self {
-            Page::List(list) => Self::list(list).into(),
+            Page::List => Self::list(card_data).into(),
         }
     }
 
     fn list(list: &'a Vec<Card>) -> Column<'a, Message> {
         column(create_card_and_games_list(list)).width(Length::Fill)
-    }
-
-    fn test_list(&mut self) {
-        match self {
-            Page::List(list) => list.push(Card {
-                uuid: String::from("000-00"),
-                name: String::from("Card 1"),
-                games: vec![
-                    Game {
-                        name: String::from("Test Game"),
-                    },
-                    Game {
-                        name: String::from("Game Two"),
-                    },
-                ],
-                lutris: None,
-                heroic: None,
-            }),
-        }
-    }
-
-    /// Testing Function to clear the list data
-    fn clear_list(&mut self) {
-        match self {
-            Page::List(list) => list.clear(),
-        }
-    }
-
-    /// Updates the list with the current card using the scanning::add_current_card function
-    fn scan_card(&mut self) {
-        match self {
-            Page::List(list) => crate::scanning::add_current_card(list),
-        }
     }
 }
 
@@ -240,6 +189,7 @@ fn get_card_data() -> Vec<Card> {
             }
             None => {
                 eprintln!("Error scanning SD card data");
+                // If there wasn't any saved data found in ~/.config/sdscannerssave.json and no current SD card, return an empty list
                 vec![]
             }
         },
