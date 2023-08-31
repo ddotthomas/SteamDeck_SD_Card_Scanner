@@ -1,13 +1,18 @@
 use crate::scanning::{Card, Game};
-use iced::widget::Column;
-use iced::widget::{button, column, container, row, scrollable, text};
-use iced::{executor, window, Alignment, Application, Command, Element, Length, Theme};
+use iced::widget::{
+    button, column, container, row, scrollable, text, text_input, Column, Scrollable,
+};
+use iced::{executor, window, Alignment, Application, Color, Command, Element, Length, Theme};
 use std::process;
+
+mod theming;
+mod utils;
 
 pub struct App {
     pages: Vec<Page>,
     current: usize,
     card_data: Vec<Card>,
+    search_term: String,
 }
 
 impl Application for App {
@@ -22,6 +27,7 @@ impl Application for App {
                 pages: vec![Page::List],
                 current: 0,
                 card_data: get_card_data(),
+                search_term: String::new(),
             },
             Command::none(),
         )
@@ -36,6 +42,7 @@ impl Application for App {
             Message::ScanCard => crate::scanning::add_current_card(&mut self.card_data),
             Message::Exit => process::exit(0),
             Message::Fullscreen => return window::toggle_maximize(),
+            Message::SearchInput(text_input) => self.search_term = text_input,
         }
 
         Command::none()
@@ -71,9 +78,9 @@ impl Application for App {
         .padding(12)
         .align_items(Alignment::Center);
 
-        let content = self.pages[self.current].view(&self.card_data);
+        let content = self.pages[self.current].view(&self.card_data, &self.search_term);
 
-        container(row!(controls, scrollable(content)))
+        container(row!(controls, content))
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
@@ -93,6 +100,7 @@ pub enum Message {
     Exit,
     /// Attempt at a fullscreen button and to fix the issue with the app's resolution while on the desktop and in game mode
     Fullscreen,
+    SearchInput(String),
 }
 
 pub enum Page {
@@ -100,20 +108,58 @@ pub enum Page {
 }
 
 impl<'a> Page {
-    fn view(&'a self, card_data: &'a Vec<Card>) -> Element<Message> {
+    /// view() probably shouldn't be designed to require card_data or search_term but it works for now
+    fn view(&'a self, card_data: &'a Vec<Card>, search_term: &'a str) -> Element<Message> {
         match self {
-            Page::List => Self::list(card_data).into(),
+            Page::List => Self::list(card_data, search_term).into(),
         }
     }
 
-    fn list(list: &'a Vec<Card>) -> Column<'a, Message> {
-        column(create_card_and_games_list(list)).width(Length::Fill)
+    fn list(list: &'a Vec<Card>, search_term: &'a str) -> Column<'a, Message> {
+        let mut element_list: Vec<Element<Message>> = vec![row(vec![
+            text_input("Filter Search...", search_term, |text_value| {
+                Message::SearchInput(text_value)
+            })
+            .into(),
+            text(format!(
+                "Current Card: {}",
+                if let Some(card_name) = utils::get_card_name(list) {
+                    card_name
+                } else {
+                    String::from("No Card Detected")
+                }
+            ))
+            .into(), // TODO, make it translate the current UUID into the user's name for the card
+        ])
+        .into()];
+
+        element_list.push(create_card_and_games_list(list, search_term).into());
+        column(element_list).width(Length::Fill)
     }
+
+    // TODO
+    //fn settings(list_data: &Vec<Card>) -> Column<Message> {
+    //    let mut element_list: Vec<Element<Message>> = vec![];
+    //
+    //    todo!()
+    //}
 }
 
 /// Converts the list data into an Iced GUI list of the cards and their games
-fn create_card_and_games_list(list: &Vec<Card>) -> Vec<Element<Message>> {
+/// Also provides the search functionality by filtering the list data by the `search_term`
+/// The `search_term` is is provided by the user in search bar
+fn create_card_and_games_list<'a>(
+    list: &'a Vec<Card>,
+    search_term: &'a str,
+) -> Scrollable<'a, Message> {
     let mut return_list: Vec<Element<Message>> = vec![];
+
+    let list = if search_term.is_empty() {
+        // If the search term is empty, don't filter the list
+        list.clone()
+    } else {
+        utils::filter_list(list, search_term)
+    };
 
     for card in list {
         // List is seperated by different SD cards
@@ -134,10 +180,21 @@ fn create_card_and_games_list(list: &Vec<Card>) -> Vec<Element<Message>> {
                 .into(),
         );
 
-        if card.lutris.is_some() {
-            return_list.push(text(format!("Lutris Library")).size(40).into());
-
-            if let Some(library) = &card.lutris {
+        if let Some(library) = card.lutris {
+            if !library.games.is_empty() {
+                // If there were no games found or they were all filtered out by the search,
+                // don't add any elements to differentiate the other libraries
+                return_list.push(
+                    text(format!("Lutris Library"))
+                        .style(Color {
+                            a: 1.0,
+                            r: 0.97,
+                            g: 0.6,
+                            b: 0.31,
+                        })
+                        .size(40)
+                        .into(),
+                );
                 return_list.push(
                     library
                         .games
@@ -150,10 +207,9 @@ fn create_card_and_games_list(list: &Vec<Card>) -> Vec<Element<Message>> {
             }
         }
 
-        if card.heroic.is_some() {
-            return_list.push(text(format!("Heroic Library")).size(40).into());
-
-            if let Some(library) = &card.heroic {
+        if let Some(library) = card.heroic {
+            if !library.games.is_empty() {
+                return_list.push(text(format!("Heroic Library")).size(40).into());
                 return_list.push(
                     library
                         .games
@@ -167,9 +223,7 @@ fn create_card_and_games_list(list: &Vec<Card>) -> Vec<Element<Message>> {
         }
     }
 
-    // return_list.push(text("For some reason the either the iced-rs backend or Gamescope doesn't allow the mouse to move down here.\nIf you know why or can help at all consider contributing on GitHub").vertical_alignment(alignment::Vertical::Bottom).size(15).into());
-
-    return_list
+    scrollable(column(return_list).width(Length::Fill))
 }
 
 /// Gets the saved data from the json file in ~/.config and updates it with the currently inserted card
@@ -178,13 +232,13 @@ fn get_card_data() -> Vec<Card> {
         Some(mut list) => {
             // Update the current cards data to the list, update the file
             crate::scanning::add_current_card(&mut list);
-            crate::scanning::save_data(&list);
+            crate::scanning::save_data_to_json(&list);
             list
         }
         None => match crate::scanning::scan_card(None) {
             // If the save file wasn't found, scan the current card if it exists and create the save file
             Some(card) => {
-                crate::scanning::save_data(&vec![card.clone()]);
+                crate::scanning::save_data_to_json(&vec![card.clone()]);
                 vec![card]
             }
             None => {

@@ -34,7 +34,7 @@ pub struct Game {
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct OtherLibrary {
     /// The path of the libraries folder, will be used to scan the already found folder and skip searching for it again.
-    path: PathBuf,
+    pub path: PathBuf,
     /// List of games found in the library's folder
     pub games: Vec<Game>,
 }
@@ -239,7 +239,7 @@ fn find_games(search_dir: &Path) -> Option<Vec<Game>> {
 }
 
 /// Saves the list of Card data into a json file into the user's .config folder. (~/.config/sdscannersave.json)
-pub fn save_data(list: &Vec<Card>) {
+pub fn save_data_to_json(list: &Vec<Card>) {
     let save_data_path: PathBuf =
         PathBuf::from(dirs::config_dir().unwrap()).join("sdscannersave.json");
 
