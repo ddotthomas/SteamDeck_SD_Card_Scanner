@@ -2,7 +2,10 @@
 
  An application to help you keep track of the different games you have on your SD Cards. If you ever found yourself wondering if you already have a game installed on a different SD Card then this is for you.
 
-<img alt="SD Card Scanner" src="https://i.imgur.com/7x6iNhv.jpg" width=650>
+<img alt="Main Menu and demonstation of the SD Scanner app" src="./screenshots/app-scrolling.gif" width=650>
+
+
+<img alt="App search filtering function demonstation" src="./screenshots/searching.gif" width=650>
 
 ## How to use:
 
@@ -30,7 +33,6 @@ sd/other games/heroic/
 ## Things to be added or improved/ known issues
 
 - There's currently an issue where it looks like gamescope sees the application at a different resolution than it actually is, more info [here](https://www.reddit.com/r/SteamDeck/comments/10jk36q/having_issues_with_the_windows_size_while/). I recommend switching the controller layout to the "Web Browser" scheme provided by Valve. Otherwise, the mouse can't make it to the scroll bar on the right side to scroll down.
-- Allow the user to search for a game, filtering the list
 - Add a settings page, allow the user some control over how the cards are identified, scanned, and more
 - Make a better UI
 - Improve the Non Steam library folder scanning to scan any previously found folders

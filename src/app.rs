@@ -189,35 +189,37 @@ fn create_card_and_games_list<'a>(
 
         return_list.push(text(format!("Card: {}", card.name)).size(50).into());
 
-        if card.heroic.is_some() || card.lutris.is_some() {
-            // Label the Steam Library if there's also Non Steam Libraries
+        if !card.games.is_empty() {
+            if card.heroic.is_some() || card.lutris.is_some() {
+                // Label the Steam Library if there's also Non Steam Libraries
+                return_list.push(
+                    container(
+                        text(format!("Steam Games"))
+                            .style(theming::STEAM_COLOR)
+                            .size(40),
+                    )
+                    .into(),
+                );
+                return_list.push(
+                    container(text(""))
+                        .width(Length::Units(theming::DIVIDER_BAR_LENGTH))
+                        .height(Length::Units(theming::DIVIDER_BAR_HEIGHT))
+                        .padding(4)
+                        .style(theming::STEAM_CONTAINER_STYLE)
+                        .into(),
+                );
+            }
+
             return_list.push(
-                container(
-                    text(format!("Steam Games"))
-                        .style(theming::STEAM_COLOR)
-                        .size(40),
-                )
-                .into(),
-            );
-            return_list.push(
-                container(text(""))
-                    .width(Length::Units(theming::DIVIDER_BAR_LENGTH))
-                    .height(Length::Units(theming::DIVIDER_BAR_HEIGHT))
-                    .padding(4)
-                    .style(theming::STEAM_CONTAINER_STYLE)
+                //
+                card.games
+                    .iter()
+                    .fold(column![], |column: Column<Message>, game: &Game| {
+                        column.push(text(format!("{}", game.name)).size(30))
+                    })
                     .into(),
             );
         }
-
-        return_list.push(
-            //
-            card.games
-                .iter()
-                .fold(column![], |column: Column<Message>, game: &Game| {
-                    column.push(text(format!("{}", game.name)).size(30))
-                })
-                .into(),
-        );
 
         if let Some(library) = card.lutris {
             if !library.games.is_empty() {
