@@ -39,6 +39,13 @@ pub static HEROIC_COLOR: Color = Color {
     b: 0xed as f32 / 255.0,
 };
 
+pub static LABEL_BORDER_COLOR: Color = Color {
+    a: 1.0,
+    r: 0x9c as f32 / 255.0,
+    g: 0x9c as f32 / 255.0,
+    b: 0x9c as f32 / 255.0,
+};
+
 /// Returns a container::Appearance to be used with .style(), sets the background color to the LUTRIS COLOR
 pub static LUTRIS_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
@@ -55,6 +62,13 @@ pub static HEROIC_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
 pub static STEAM_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
         background: STEAM_COLOR.into(),
+        ..Default::default()
+    };
+
+pub static SETTINGS_LABEL_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
+    |_theme| container::Appearance {
+        border_color: LABEL_BORDER_COLOR,
+        border_width: 1.0,
         ..Default::default()
     };
 
