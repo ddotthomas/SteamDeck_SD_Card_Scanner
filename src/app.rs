@@ -1,10 +1,10 @@
-use crate::scanning::Card;
+use crate::scanning::{self, Card};
 use iced::widget::{column, container, row, text};
 use iced::{executor, window, Alignment, Application, Command, Element, Length, Theme};
 
 mod pages;
 mod theming;
-mod utils;
+pub mod utils;
 
 use pages::Page;
 use utils::control_button;
@@ -27,7 +27,7 @@ impl Application for App {
             App {
                 pages: vec![Page::List, Page::Settings],
                 current: 0,
-                card_data: utils::get_card_data(),
+                card_data: scanning::get_card_data(),
                 search_term: String::new(),
             },
             Command::none(),
@@ -40,7 +40,7 @@ impl Application for App {
 
     fn update(&mut self, event: Message) -> Command<Self::Message> {
         match event {
-            Message::ScanCard => crate::scanning::add_current_card(&mut self.card_data),
+            Message::ScanCard => crate::scanning::update_list(&mut self.card_data),
             Message::Exit => std::process::exit(0),
             Message::Fullscreen => return window::resize(1280, 800),
             Message::SearchInput(text_input) => self.search_term = text_input,

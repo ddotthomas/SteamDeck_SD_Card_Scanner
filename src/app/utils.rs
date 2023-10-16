@@ -1,6 +1,6 @@
 use crate::app::theming;
 use crate::app::Message;
-use crate::scanning::{save_data_to_json, Card, Game, OtherLibrary};
+use crate::scanning::{self, save_data_to_json, Card, Game, OtherLibrary};
 use iced::widget::{button, column, container, scrollable, text, Column, Scrollable};
 use iced::{Element, Length};
 
@@ -59,15 +59,30 @@ pub fn filter_list(list: &Vec<Card>, search_term: &str) -> Vec<Card> {
         .collect()
 }
 
+/// TODO needs to return possibly multiple names for multiple inserted cards
 /// Returns the name of the currently inserted card, returns None if there is no inserted card or there was an issue getting the name.
 pub fn get_card_name(list: &Vec<Card>) -> Option<String> {
-    let current_uuid = crate::scanning::get_uuid()?;
-    list.iter()
-        .filter(|&card| card.uuid == current_uuid)
-        // Filter for the card in the list with the same uuid as the inserted card
-        .map(|card| card.name.clone())
-        .next()
-    // Get the next item which should be the one inserted card
+    let mut inserted_cards = scanning::get_card_info()?;
+
+    if inserted_cards.len() == 0 {
+        // If no cards were scanned, then return None
+        return None;
+    }
+
+    for scanned_card in &mut inserted_cards {
+        scanned_card.name = list
+            .iter()
+            .filter(|&card| card.uuid == scanned_card.uuid)
+            // Filter for the card in the list with the same uuid as the inserted card
+            .map(|card| card.name.clone())
+            .next();
+    }
+
+    if inserted_cards.len() >= 1 {
+        inserted_cards[0].name.clone()
+    } else {
+        None
+    }
 }
 
 /// Converts the list data into an Iced GUI list of the cards and their games
@@ -203,32 +218,6 @@ pub fn create_card_and_games_list<'a>(
     scrollable(column(return_list).width(Length::Fill))
 }
 
-/// Gets the saved data from the json file in ~/.config and updates it with the currently inserted card
-pub fn get_card_data() -> Vec<Card> {
-    let list: Vec<Card> = match crate::scanning::get_saved_data() {
-        Some(mut list) => {
-            // Update the current cards data to the list, update the file
-            crate::scanning::add_current_card(&mut list);
-            crate::scanning::save_data_to_json(&list);
-            list
-        }
-        None => match crate::scanning::scan_card(None) {
-            // If the save file wasn't found, scan the current card if it exists and create the save file
-            Some(card) => {
-                crate::scanning::save_data_to_json(&vec![card.clone()]);
-                vec![card]
-            }
-            None => {
-                eprintln!("Error scanning SD card data");
-                // If there wasn't any saved data found in ~/.config/sdscannerssave.json and no current SD card, return an empty list
-                vec![]
-            }
-        },
-    };
-
-    list
-}
-
 pub fn control_button(label: &str, message: Message) -> Element<Message> {
     container(button(text(label).size(33)).padding(12).on_press(message))
         .padding(4)
@@ -291,4 +280,13 @@ pub fn card_games_count(card: &Card) -> usize {
     }
 
     count
+}
+
+/// The default path to the SD card's root folder before v3.5 of SteamOS
+pub const OLD_SD_ROOT: &'static str = "/run/media/mmcblk0p1";
+/// The new mount folder for SD cards after v3.5 of SteamOS
+pub const NEW_SD_PATH: &'static str = "/run/media/deck";
+
+pub fn is_sd_card_line(line: &str) -> bool {
+    line.contains(OLD_SD_ROOT) | line.contains(NEW_SD_PATH) & line.contains("mmcblk")
 }

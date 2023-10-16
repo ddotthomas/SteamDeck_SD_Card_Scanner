@@ -53,22 +53,22 @@ impl<'a> Page {
     // TODO
     fn settings(list_data: &Vec<Card>) -> Column<Message> {
         let mut element_list: Vec<Element<Message>> = vec![
-            container(text("Settings").size(40)).padding(2).into(),
+            container(text("Settings - Work in Progress").size(40)).padding(2).into(),
             row(vec![
+                long_settings_label(text("Card Name").size(25)),
                 settings_label(text("ID").size(25)),
                 settings_label(text("Game(s)").size(25)),
-                long_settings_label(text("Card Name").size(25)),
             ])
             .into(),
         ];
 
         for card in list_data {
             let card_settings = row(vec![
-                settings_label(text(&card.uuid[..4])),
-                settings_label(text(format!("{}", utils::card_games_count(&card)))),
                 long_settings_label(text_input(&card.name, &card.name, |user_input| {
                     Message::ChangeCardName(user_input, card.uuid.clone())
                 })),
+                settings_label(text(&card.uuid[..4])),
+                settings_label(text(format!("{}", utils::card_games_count(&card)))),
             ]);
 
             element_list.push(card_settings.into())
