@@ -21,13 +21,12 @@ impl<'a> Page {
 
     fn list(list: &'a Vec<Card>, search_term: &'a str) -> Column<'a, Message> {
         let mut element_list: Vec<Element<Message>> = vec![container(row(vec![
-            text_input("Filter Search...", search_term, |text_value| {
-                Message::SearchInput(text_value)
-            })
-            .size(30)
-            .width(Length::FillPortion(2))
-            .padding(4)
-            .into(),
+            text_input("Filter Search...", search_term)
+                .on_input(|text_value| Message::SearchInput(text_value))
+                .size(30)
+                .width(Length::FillPortion(2))
+                .padding(4)
+                .into(),
             container(
                 text(format!(
                     "Current Card: {}",
@@ -53,7 +52,9 @@ impl<'a> Page {
     // TODO
     fn settings(list_data: &Vec<Card>) -> Column<Message> {
         let mut element_list: Vec<Element<Message>> = vec![
-            container(text("Settings - Work in Progress").size(40)).padding(2).into(),
+            container(text("Settings - Work in Progress").size(40))
+                .padding(2)
+                .into(),
             row(vec![
                 long_settings_label(text("Card Name").size(25)),
                 settings_label(text("ID").size(25)),
@@ -63,13 +64,14 @@ impl<'a> Page {
         ];
 
         for card in list_data {
-            let card_settings = row(vec![
-                long_settings_label(text_input(&card.name, &card.name, |user_input| {
-                    Message::ChangeCardName(user_input, card.uuid.clone())
-                })),
-                settings_label(text(&card.uuid[..4])),
-                settings_label(text(format!("{}", utils::card_games_count(&card)))),
-            ]);
+            let card_settings =
+                row(vec![
+                    long_settings_label(text_input(&card.name, &card.name).on_input(
+                        |user_input| Message::ChangeCardName(user_input, card.uuid.clone()),
+                    )),
+                    settings_label(text(&card.uuid[..4])),
+                    settings_label(text(format!("{}", utils::card_games_count(&card)))),
+                ]);
 
             element_list.push(card_settings.into())
         }

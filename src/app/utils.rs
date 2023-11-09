@@ -135,8 +135,8 @@ pub fn create_card_and_games_list<'a>(
                 );
                 return_list.push(
                     container(text(""))
-                        .width(Length::Units(theming::DIVIDER_BAR_LENGTH))
-                        .height(Length::Units(theming::DIVIDER_BAR_HEIGHT))
+                        .width(Length::Fixed(theming::DIVIDER_BAR_LENGTH))
+                        .height(Length::Fixed(theming::DIVIDER_BAR_HEIGHT))
                         .padding(4)
                         .style(theming::STEAM_CONTAINER_STYLE)
                         .into(),
@@ -168,8 +168,8 @@ pub fn create_card_and_games_list<'a>(
                 // Add a divider line under the Lutris Library label
                 return_list.push(
                     container(text(""))
-                        .width(Length::Units(theming::DIVIDER_BAR_LENGTH))
-                        .height(Length::Units(theming::DIVIDER_BAR_HEIGHT))
+                        .width(Length::Fixed(theming::DIVIDER_BAR_LENGTH))
+                        .height(Length::Fixed(theming::DIVIDER_BAR_HEIGHT))
                         .padding(4)
                         .style(theming::LUTRIS_CONTAINER_STYLE)
                         .into(),
@@ -196,8 +196,8 @@ pub fn create_card_and_games_list<'a>(
                 );
                 return_list.push(
                     container(text(""))
-                        .width(Length::Units(theming::DIVIDER_BAR_LENGTH))
-                        .height(Length::Units(theming::DIVIDER_BAR_HEIGHT))
+                        .width(Length::Fixed(theming::DIVIDER_BAR_LENGTH))
+                        .height(Length::Fixed(theming::DIVIDER_BAR_HEIGHT))
                         .padding(4)
                         .style(theming::HEROIC_CONTAINER_STYLE)
                         .into(),
@@ -254,8 +254,8 @@ pub fn settings_label<'a>(content: impl Into<Element<'a, Message>>) -> Element<'
     container(content)
         .padding(5)
         .style(theming::SETTINGS_LABEL_CONTAINER_STYLE)
-        .width(Length::Units(90))
-        .height(Length::Units(60))
+        .width(Length::Fixed(90.))
+        .height(Length::Fixed(60.))
         .into()
 }
 
@@ -263,8 +263,8 @@ pub fn long_settings_label<'a>(content: impl Into<Element<'a, Message>>) -> Elem
     container(content)
         .padding(5)
         .style(theming::SETTINGS_LABEL_CONTAINER_STYLE)
-        .width(Length::Units(310))
-        .height(Length::Units(60))
+        .width(Length::Fixed(310.))
+        .height(Length::Fixed(60.))
         .into()
 }
 
