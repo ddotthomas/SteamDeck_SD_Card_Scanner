@@ -1,4 +1,4 @@
-use iced::{window, Application, Settings};
+use iced::{font::Family, window, Application, Font, Settings};
 
 mod app;
 mod scanning;
@@ -12,6 +12,10 @@ fn main() -> iced::Result {
             size,
             // max_size: Some((1280, 800)),
             ..window::Settings::default()
+        },
+        default_font: Font {
+            family: Family::Name("DejaVu Sans"),
+            ..Default::default()
         },
         ..Settings::default()
     })
