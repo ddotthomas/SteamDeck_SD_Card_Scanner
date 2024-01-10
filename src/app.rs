@@ -1,7 +1,8 @@
 use crate::scanning::{self, Card};
 use iced::widget::{column, container, row, text};
-use iced::{executor, window, Alignment, Application, Command, Element, Length, Size, Theme};
+use iced::{executor, Alignment, Application, Command, Element, Length, Subscription, Theme};
 
+mod controller;
 mod pages;
 mod theming;
 pub mod utils;
@@ -9,11 +10,17 @@ pub mod utils;
 use pages::Page;
 use utils::control_button;
 
+use self::controller::ControlEvent;
+
 pub struct App {
     pages: Vec<Page>,
-    current: usize,
+    current_page: usize,
     card_data: Vec<Card>,
     search_term: String,
+    // Tracks how far to the right the selection should be
+    selected_x: usize,
+    // Tracks how far up the selection should be
+    selected_y: usize,
 }
 
 impl Application for App {
@@ -26,9 +33,11 @@ impl Application for App {
         (
             App {
                 pages: vec![Page::List, Page::Settings],
-                current: 0,
+                current_page: 0,
                 card_data: scanning::get_card_data(),
                 search_term: String::new(),
+                selected_x: 0,
+                selected_y: 0,
             },
             Command::none(),
         )
@@ -42,21 +51,38 @@ impl Application for App {
         match event {
             Message::ScanCard => crate::scanning::update_list(&mut self.card_data),
             Message::Exit => std::process::exit(0),
-            Message::Fullscreen => {
-                return window::resize(Size {
-                    width: 1280,
-                    height: 800,
-                })
-            }
             Message::SearchInput(text_input) => self.search_term = text_input,
-            Message::Settings => self.current = 1,
-            Message::Home => self.current = 0,
+            Message::Settings => self.current_page = 1,
+            Message::Home => self.current_page = 0,
             Message::ChangeCardName(card_name, card_uuid) => {
                 self.card_data = utils::change_card_name(card_name, card_uuid, &self.card_data)
+            }
+            Message::ControllerEvent(controller_event) => {
+                match controller_event {
+                    ControlEvent::Left => {
+                        self.selected_x = self.selected_x.saturating_sub(1);
+                    }
+                    ControlEvent::Right => {
+                        self.selected_x += 1;
+                    }
+                    ControlEvent::Down => {
+                        self.selected_y = self.selected_y.saturating_sub(1);
+                    }
+                    ControlEvent::Up => {
+                        self.selected_y += 1;
+                    }
+                    ControlEvent::Search => {} //TODO, select the Search Box
+                    ControlEvent::Back => {}   //TODO, go back
+                    ControlEvent::Select => {} //TODO, select the current highlight
+                }
             }
         }
 
         Command::none()
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        controller::read_controller().map(Message::ControllerEvent)
     }
 
     fn view(&self) -> Element<Message> {
@@ -64,19 +90,18 @@ impl Application for App {
             .padding(10)
             .into()];
 
-        if self.current != 0 {
+        if self.current_page != 0 {
             controls.push(control_button("Home", Message::Home));
         }
-        if self.current != 1 {
+        if self.current_page != 1 {
             controls.push(control_button("Settings", Message::Settings));
         }
         controls.push(control_button("Rescan Card", Message::ScanCard));
         controls.push(control_button("Exit", Message::Exit));
-        controls.push(control_button("Fullscreen", Message::Fullscreen));
 
         let controls_column = column(controls).padding(12).align_items(Alignment::Center);
 
-        let content = self.pages[self.current].view(&self.card_data, &self.search_term);
+        let content = self.pages[self.current_page].view(&self.card_data, &self.search_term);
 
         container(row!(controls_column, content))
             .width(Length::Fill)
@@ -96,10 +121,9 @@ pub enum Message {
     ScanCard,
     /// Exit the application, called when 'Exit' is clicked
     Exit,
-    /// Attempt at a fullscreen button and to fix the issue with the app's resolution while on the desktop and in game mode
-    Fullscreen,
     SearchInput(String),
     Settings,
     Home,
     ChangeCardName(String, String),
+    ControllerEvent(controller::ControlEvent),
 }
