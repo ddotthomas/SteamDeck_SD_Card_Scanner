@@ -48,7 +48,7 @@ impl Application for App {
     fn update(&mut self, event: Message) -> Command<Self::Message> {
         match event {
             Message::Exit => std::process::exit(0),
-            Message::SearchInput(text_input) => self.search_term = text_input,
+            Message::SearchInput(text_input) => {self.search_term = text_input; self.select_coords.y = 0;},
             Message::Settings => self.current_page = 1,
             Message::Home => self.current_page = 0,
             Message::ChangeCardName(card_name, card_uuid) => {

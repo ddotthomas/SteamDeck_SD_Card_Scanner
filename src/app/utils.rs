@@ -329,8 +329,10 @@ impl App {
                 1
             } else {
                 match self.current_page {
-                    0 => usize::MAX,
-                    1 => usize::MAX,
+                    // The Home page can scroll down as long as the list
+                    0 => get_game_list_length(&self) - 1,
+                    // The settings page has 1 card per row
+                    1 => self.card_data.len(),
                     _ => usize::MAX,
                 }
             },
@@ -357,4 +359,35 @@ impl<'a> Selectable for Container<'a, Message> {
     fn highlight(self) -> Self {
         self.style(theming::HIGHLIGHTED_BUTTON_STYLE)
     }
+}
+
+/// A function to get the amount of items in the App's game list to let the selection have a limit.
+fn get_game_list_length(app_data: &App) -> usize {
+    let mut buffer: usize = 0;
+
+    for card in app_data.card_data.iter() {
+        // Add 2 to the buffer for the Card and Steam Library label
+        buffer += 2;
+
+        for _game in card.games.iter() {
+            buffer += 1;
+        }
+
+        if let Some(lutris) = &card.lutris {
+            // Add 1 for the Lutris label
+            buffer += 1;
+            for _game in lutris.games.iter() {
+                buffer += 1;
+            }
+        }
+        if let Some(heroic) = &card.heroic {
+            // Add 1 for the Heroic label
+            buffer += 1;
+            for _game in heroic.games.iter() {
+                buffer += 1;
+            }
+        }
+    }
+
+    buffer
 }
