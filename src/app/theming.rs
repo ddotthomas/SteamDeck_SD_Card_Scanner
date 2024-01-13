@@ -46,6 +46,20 @@ pub static LABEL_BORDER_COLOR: Color = Color {
     b: 0x9c as f32 / 255.0,
 };
 
+pub static HIGHLIGHT_BORDER_COLOR: Color = Color {
+    a: 1.0,
+    r: 0xdb as f32 / 255.0,
+    g: 0x4d as f32 / 255.0,
+    b: 0xff as f32 / 255.0,
+};
+
+pub static HIGHLIGHT_TEXT_COLOR: Color = Color {
+    a: 1.0,
+    r: 0xf9 as f32 / 255.0,
+    g: 0xf9 as f32 / 255.0,
+    b: 0xf9 as f32 / 255.0,
+};
+
 /// Returns a container::Appearance to be used with .style(), sets the background color to the LUTRIS COLOR
 pub static LUTRIS_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
@@ -69,6 +83,15 @@ pub static SETTINGS_LABEL_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
         border_color: LABEL_BORDER_COLOR,
         border_width: 1.0,
+        ..Default::default()
+    };
+
+pub static HIGHLIGHTED_BUTTON_STYLE: fn(&Theme) -> container::Appearance =
+    |_theme| container::Appearance {
+        border_color: HIGHLIGHT_BORDER_COLOR,
+        border_width: 4.0,
+        border_radius: 2.0_f32.into(),
+        text_color: Some(HIGHLIGHT_TEXT_COLOR),
         ..Default::default()
     };
 

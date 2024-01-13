@@ -2,6 +2,7 @@ use crate::app::utils;
 use crate::app::utils::{long_settings_label, settings_label};
 use crate::app::Message;
 use crate::scanning::Card;
+use crate::App;
 use iced::widget::{column, container, row, text, text_input, Column};
 use iced::{Element, Length};
 
@@ -12,16 +13,16 @@ pub enum Page {
 
 impl<'a> Page {
     /// view() probably shouldn't be designed to require card_data or search_term but it works for now
-    pub fn view(&'a self, card_data: &'a Vec<Card>, search_term: &'a str) -> Element<Message> {
+    pub fn view(&'a self, app_data: &'a App) -> Element<Message> {
         match self {
-            Page::List => Self::list(card_data, search_term).into(),
-            Page::Settings => Self::settings(card_data).into(),
+            Page::List => Self::list(app_data).into(),
+            Page::Settings => Self::settings(&app_data.card_data).into(),
         }
     }
 
-    fn list(list: &'a Vec<Card>, search_term: &'a str) -> Column<'a, Message> {
+    fn list(app_data: &'a App) -> Column<'a, Message> {
         let mut element_list: Vec<Element<Message>> = vec![container(row(vec![
-            text_input("Filter Search...", search_term)
+            text_input("Filter Search...", &app_data.search_term)
                 .on_input(|text_value| Message::SearchInput(text_value))
                 .size(30)
                 .width(Length::FillPortion(2))
@@ -30,7 +31,7 @@ impl<'a> Page {
             container(
                 text(format!(
                     "Current Card: {}",
-                    if let Some(card_name) = utils::get_card_name(list) {
+                    if let Some(card_name) = utils::get_card_name(&app_data.card_data) {
                         card_name
                     } else {
                         String::from("No Card Detected")
@@ -45,12 +46,14 @@ impl<'a> Page {
         .padding(4)
         .into()];
 
-        element_list.push(utils::create_card_and_games_list(list, search_term).into());
+        element_list.push(
+            utils::create_card_and_games_list(&app_data.card_data, &app_data.search_term).into(),
+        );
         column(element_list).width(Length::Fill)
     }
 
     // TODO
-    fn settings(list_data: &Vec<Card>) -> Column<Message> {
+    fn settings(card_data: &Vec<Card>) -> Column<Message> {
         let mut element_list: Vec<Element<Message>> = vec![
             container(text("Settings - Work in Progress").size(40))
                 .padding(2)
@@ -63,7 +66,7 @@ impl<'a> Page {
             .into(),
         ];
 
-        for card in list_data {
+        for card in card_data {
             let card_settings =
                 row(vec![
                     long_settings_label(text_input(&card.name, &card.name).on_input(

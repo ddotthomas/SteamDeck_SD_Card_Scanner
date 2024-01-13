@@ -1,8 +1,11 @@
 use crate::app::theming;
 use crate::app::Message;
 use crate::scanning::{self, save_data_to_json, Card, Game, OtherLibrary};
+use iced::widget::Container;
 use iced::widget::{button, column, container, scrollable, text, Column, Scrollable};
 use iced::{Element, Length};
+
+use super::App;
 
 /// Returns a copy of the passed in list after it's been filtered by the search term
 pub fn filter_list(list: &Vec<Card>, search_term: &str) -> Vec<Card> {
@@ -218,10 +221,8 @@ pub fn create_card_and_games_list<'a>(
     scrollable(column(return_list).width(Length::Fill))
 }
 
-pub fn control_button(label: &str, message: Message) -> Element<Message> {
-    container(button(text(label).size(33)).padding(12).on_press(message))
-        .padding(4)
-        .into()
+pub fn control_button(label: &str, message: Message) -> Container<Message> {
+    container(button(text(label).size(33)).padding(12).on_press(message)).padding(4)
 }
 
 pub fn change_card_name(card_name: String, card_uuid: String, cards: &Vec<Card>) -> Vec<Card> {
@@ -289,4 +290,71 @@ pub const NEW_SD_PATH: &'static str = "/run/media/deck";
 
 pub fn is_sd_card_line(line: &str) -> bool {
     line.contains(OLD_SD_ROOT) | line.contains(NEW_SD_PATH) & line.contains("mmcblk")
+}
+
+pub struct SelectCoords {
+    pub x: usize,
+    pub y: usize,
+}
+
+// TODO we need to parse the card data and other such things from the App to determine what the length of various list and pages are
+impl App {
+    /// Modify the App.select_coords to move left
+    pub fn move_left(&mut self) {
+        self.select_coords.x = self.select_coords.x.saturating_sub(1);
+    }
+
+    /// Modify the App.select_coords to move right
+    pub fn move_right(&mut self) {
+        self.select_coords.x += 1;
+        // We set the maximum amount left the user can select based on what page their on
+        self.select_coords.x = self.select_coords.x.min(match self.current_page {
+            // The List/Home page only goes over once
+            0 => 1,
+            // Settings page can move over 3
+            1 => 3,
+            // Catch all, let user move
+            _ => 10,
+        });
+    }
+
+    /// Modify the App.select_coords to move down
+    pub fn move_down(&mut self) {
+        // Y goes up as selection moves down
+        self.select_coords.y += 1;
+        // We set the maximum amount left the user can select based on what page their on
+        self.select_coords.y = self.select_coords.y.min(
+            // If the user is over to the far left, let them move 1 time down the left panel
+            if self.select_coords.x == 0 {
+                1
+            } else {
+                match self.current_page {
+                    0 => usize::MAX,
+                    1 => usize::MAX,
+                    _ => usize::MAX,
+                }
+            },
+        );
+    }
+
+    /// Modify the App.select_coords to move up
+    pub fn move_up(&mut self) {
+        self.select_coords.y = self.select_coords.y.saturating_sub(1);
+    }
+}
+
+impl From<(usize, usize)> for SelectCoords {
+    fn from((x, y): (usize, usize)) -> Self {
+        Self { x, y }
+    }
+}
+
+pub trait Selectable {
+    fn highlight(self) -> Self;
+}
+
+impl<'a> Selectable for Container<'a, Message> {
+    fn highlight(self) -> Self {
+        self.style(theming::HIGHLIGHTED_BUTTON_STYLE)
+    }
 }
