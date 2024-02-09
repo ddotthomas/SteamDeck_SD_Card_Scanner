@@ -1,5 +1,5 @@
 use gilrs::{Axis, Button, EventType};
-use iced::{futures::SinkExt, subscription, Subscription};
+use iced::{subscription, Subscription};
 
 pub fn read_controller() -> Subscription<ControlEvent> {
     struct ControllerHandle;
@@ -12,26 +12,36 @@ pub fn read_controller() -> Subscription<ControlEvent> {
             let mut gilrs = gilrs::Gilrs::new().expect("Couldn't create gilrs controller handle");
             let mut directions = DirectionToggles::new();
 
-            loop {
-                if let Some(event) = gilrs.next_event() {
+            tokio::task::spawn_blocking(move || loop {
+                if let Some(event) = gilrs.next_event_blocking(None) {
                     match event.event {
                         EventType::ButtonPressed(Button::South, _) => {
-                            let _ = output.send(ControlEvent::Select).await;
+                            let _ = output
+                                .try_send(ControlEvent::Select)
+                                .expect("Failed to send input to App");
                         }
                         EventType::ButtonPressed(Button::East, _) => {
-                            let _ = output.send(ControlEvent::Back).await;
+                            let _ = output
+                                .try_send(ControlEvent::Back)
+                                .expect("Failed to send input to App");
                         }
                         EventType::ButtonPressed(Button::North, _) => {
-                            let _ = output.send(ControlEvent::Search).await;
+                            let _ = output
+                                .try_send(ControlEvent::Search)
+                                .expect("Failed to send input to App");
                         }
                         EventType::AxisChanged(Axis::LeftStickX, amt, _) => {
                             if amt >= 0.34 && !directions.right {
                                 directions.right = true;
-                                let _ = output.send(ControlEvent::Right).await;
+                                let _ = output
+                                    .try_send(ControlEvent::Right)
+                                    .expect("Failed to send input to App");
                             }
                             if amt <= -0.34 && !directions.left {
                                 directions.left = true;
-                                let _ = output.send(ControlEvent::Left).await;
+                                let _ = output
+                                    .try_send(ControlEvent::Left)
+                                    .expect("Failed to send input to App");
                             }
                             if amt >= -0.34 && amt <= 0.34 {
                                 directions.left = false;
@@ -41,11 +51,15 @@ pub fn read_controller() -> Subscription<ControlEvent> {
                         EventType::AxisChanged(Axis::LeftStickY, amt, _) => {
                             if amt >= 0.34 && !directions.up {
                                 directions.up = true;
-                                let _ = output.send(ControlEvent::Up).await;
+                                let _ = output
+                                    .try_send(ControlEvent::Up)
+                                    .expect("Failed to send input to App");
                             }
                             if amt <= -0.34 && !directions.down {
                                 directions.down = true;
-                                let _ = output.send(ControlEvent::Down).await;
+                                let _ = output
+                                    .try_send(ControlEvent::Down)
+                                    .expect("Failed to send input to App");
                             }
                             if amt >= -0.34 && amt <= 0.34 {
                                 directions.up = false;
@@ -55,6 +69,11 @@ pub fn read_controller() -> Subscription<ControlEvent> {
                         _ => {}
                     }
                 }
+            })
+            .await
+            .expect("Failed to spawn tokio blocking thread");
+            loop {
+                iced::futures::pending!();
             }
         },
     )

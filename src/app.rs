@@ -48,7 +48,10 @@ impl Application for App {
     fn update(&mut self, event: Message) -> Command<Self::Message> {
         match event {
             Message::Exit => std::process::exit(0),
-            Message::SearchInput(text_input) => {self.search_term = text_input; self.select_coords.y = 0;},
+            Message::SearchInput(text_input) => {
+                self.search_term = text_input;
+                self.select_coords.y = 0;
+            }
             Message::Settings => self.current_page = 1,
             Message::Home => self.current_page = 0,
             Message::ChangeCardName(card_name, card_uuid) => {
@@ -93,8 +96,10 @@ impl Application for App {
 
         // If the selection is to the left, apply the highlight to the correct button
         if self.select_coords.x == 0 {
-            let button = button_panel.remove(self.select_coords.y).highlight();
-            button_panel.insert(self.select_coords.y, button);
+            // Check that y didn't exceed the bound of the list
+            let index = self.select_coords.y.min(button_panel.len() - 1);
+            let button = button_panel.remove(index).highlight();
+            button_panel.insert(index, button);
         }
 
         controls.append(

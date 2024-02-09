@@ -91,17 +91,18 @@ pub fn get_card_name(list: &Vec<Card>) -> Option<String> {
 /// Converts the list data into an Iced GUI list of the cards and their games
 /// Also provides the search functionality by filtering the list data by the `search_term`
 /// The `search_term` is is provided by the user in search bar
+/// 
+/// 
 pub fn create_card_and_games_list<'a>(
-    list: &'a Vec<Card>,
-    search_term: &'a str,
+    app_data: &'a App,
 ) -> Scrollable<'a, Message> {
     let mut return_list: Vec<Element<Message>> = vec![];
 
-    let list = if search_term.is_empty() {
+    let list = if app_data.search_term.is_empty() {
         // If the search term is empty, don't filter the list
-        list.clone()
+        app_data.card_data.clone()
     } else {
-        filter_list(list, search_term)
+        filter_list(&app_data.card_data, &app_data.search_term)
     };
 
     for card in list {
@@ -118,7 +119,7 @@ pub fn create_card_and_games_list<'a>(
                 None => true,
                 Some(lutris_list) => lutris_list.games.is_empty(),
             }
-            && !search_term.is_empty()
+            && !app_data.search_term.is_empty()
         {
             continue;
         }
@@ -390,4 +391,10 @@ fn get_game_list_length(app_data: &App) -> usize {
     }
 
     buffer
+}
+
+pub fn highlight_selection(element_list: &mut Vec<Element<Message>>, select_coords: SelectCoords) {
+    if select_coords.x > 0 {
+        
+    }
 }

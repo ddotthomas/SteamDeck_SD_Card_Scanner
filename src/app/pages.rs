@@ -12,7 +12,6 @@ pub enum Page {
 }
 
 impl<'a> Page {
-    /// view() probably shouldn't be designed to require card_data or search_term but it works for now
     pub fn view(&'a self, app_data: &'a App) -> Element<Message> {
         match self {
             Page::List => Self::list(app_data).into(),
@@ -47,8 +46,11 @@ impl<'a> Page {
         .into()];
 
         element_list.push(
-            utils::create_card_and_games_list(&app_data.card_data, &app_data.search_term).into(),
+            utils::create_card_and_games_list(app_data).into(),
         );
+
+        utils::highlight_selection(&mut element_list, app_data.select_coords);
+
         column(element_list).width(Length::Fill)
     }
 
