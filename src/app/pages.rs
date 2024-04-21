@@ -21,7 +21,8 @@ impl<'a> Page {
 
     fn list(list: &'a Vec<Card>, search_term: &'a str) -> Column<'a, Message> {
         let mut element_list: Vec<Element<Message>> = vec![container(row(vec![
-            text_input("Filter Search...", search_term, |text_value| {
+            text_input("Filter Search...", search_term)
+            .on_input(|text_value| {
                 Message::SearchInput(text_value)
             })
             .size(30)
@@ -64,7 +65,7 @@ impl<'a> Page {
 
         for card in list_data {
             let card_settings = row(vec![
-                long_settings_label(text_input(&card.name, &card.name, |user_input| {
+                long_settings_label(text_input(&card.name, &card.name).on_input(|user_input| {
                     Message::ChangeCardName(user_input, card.uuid.clone())
                 })),
                 settings_label(text(&card.uuid[..4])),

@@ -1,4 +1,4 @@
-use iced::{window, Application, Settings};
+use iced::{window, Application, Settings, Size};
 
 mod app;
 mod scanning;
@@ -6,10 +6,9 @@ mod scanning;
 use app::App;
 
 fn main() -> iced::Result {
-    let size = (1280, 800);
     App::run(Settings {
         window: window::Settings {
-            size,
+            size: Size::new(1280.0, 800.0),
             // max_size: Some((1280, 800)),
             ..window::Settings::default()
         },

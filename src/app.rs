@@ -1,6 +1,6 @@
 use crate::scanning::{self, Card};
 use iced::widget::{column, container, row, text};
-use iced::{executor, window, Alignment, Application, Command, Element, Length, Theme};
+use iced::{executor, window, Alignment, Application, Command, Element, Length, Theme, Size};
 
 mod pages;
 mod theming;
@@ -42,7 +42,7 @@ impl Application for App {
         match event {
             Message::ScanCard => crate::scanning::update_list(&mut self.card_data),
             Message::Exit => std::process::exit(0),
-            Message::Fullscreen => return window::resize(1280, 800),
+            Message::Fullscreen => return window::resize(iced::window::Id::MAIN, Size::new(1280.0, 800.0)),
             Message::SearchInput(text_input) => self.search_term = text_input,
             Message::Settings => self.current = 1,
             Message::Home => self.current = 0,

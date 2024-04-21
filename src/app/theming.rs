@@ -1,6 +1,6 @@
 use iced::theme::Theme;
 use iced::widget::container;
-use iced::Color;
+use iced::{Color, Border};
 
 // steam green 4d5a45 - ugly
 // Color {
@@ -11,8 +11,8 @@ use iced::Color;
 // };
 // steam purple #BF00B4
 
-pub static DIVIDER_BAR_HEIGHT: u16 = 6;
-pub static DIVIDER_BAR_LENGTH: u16 = 450;
+pub static DIVIDER_BAR_HEIGHT: f32 = 6.0;
+pub static DIVIDER_BAR_LENGTH: f32 = 450.0;
 
 pub static STEAM_COLOR: Color = Color {
     a: 1.0,
@@ -49,26 +49,25 @@ pub static LABEL_BORDER_COLOR: Color = Color {
 /// Returns a container::Appearance to be used with .style(), sets the background color to the LUTRIS COLOR
 pub static LUTRIS_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
-        background: LUTRIS_COLOR.into(),
+        background: Some(LUTRIS_COLOR.into()),
         ..Default::default()
     };
 
 pub static HEROIC_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
-        background: HEROIC_COLOR.into(),
+        background: Some(HEROIC_COLOR.into()),
         ..Default::default()
     };
 
 pub static STEAM_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
-        background: STEAM_COLOR.into(),
+        background: Some(STEAM_COLOR.into()),
         ..Default::default()
     };
 
 pub static SETTINGS_LABEL_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
-        border_color: LABEL_BORDER_COLOR,
-        border_width: 1.0,
+        border: Border { color: LABEL_BORDER_COLOR, width: 1.0, radius: 1.into() },
         ..Default::default()
     };
 
