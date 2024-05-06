@@ -53,18 +53,21 @@ pub static LUTRIS_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
         ..Default::default()
     };
 
+/// Returns a container::Appearance to be used with .style(), sets the background color to the HEROIC COLOR
 pub static HEROIC_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
         background: Some(HEROIC_COLOR.into()),
         ..Default::default()
     };
 
+/// Returns a container::Appearance to be used with .style(), sets the background color to the STEAM COLOR
 pub static STEAM_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
         background: Some(STEAM_COLOR.into()),
         ..Default::default()
     };
 
+/// Returns a container::Appearance to be used with .style(), gives the container a border
 pub static SETTINGS_LABEL_CONTAINER_STYLE: fn(&Theme) -> container::Appearance =
     |_theme| container::Appearance {
         border: Border { color: LABEL_BORDER_COLOR, width: 1.0, radius: 1.into() },

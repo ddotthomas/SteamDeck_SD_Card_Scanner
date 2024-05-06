@@ -11,7 +11,8 @@ pub enum Page {
 }
 
 impl<'a> Page {
-    /// view() probably shouldn't be designed to require card_data or search_term but it works for now
+    // view() probably shouldn't be designed to require card_data or search_term but it works for now
+    /// Returns the GUI elements depending on the current Page
     pub fn view(&'a self, card_data: &'a Vec<Card>, search_term: &'a str) -> Element<Message> {
         match self {
             Page::List => Self::list(card_data, search_term).into(),
@@ -19,6 +20,7 @@ impl<'a> Page {
         }
     }
 
+    /// Return the list Page GUI elements
     fn list(list: &'a Vec<Card>, search_term: &'a str) -> Column<'a, Message> {
         let mut element_list: Vec<Element<Message>> = vec![container(row(vec![
             text_input("Filter Search...", search_term)
@@ -47,11 +49,12 @@ impl<'a> Page {
         .padding(4)
         .into()];
 
-        element_list.push(utils::create_card_and_games_list(list, search_term).into());
+        element_list.push(utils::create_card_and_games_list(list, search_term));
         column(element_list).width(Length::Fill)
     }
 
     // TODO
+    /// Returns the settings Page GUI elements
     fn settings(list_data: &Vec<Card>) -> Column<Message> {
         let mut element_list: Vec<Element<Message>> = vec![
             container(text("Settings - Work in Progress").size(40)).padding(2).into(),

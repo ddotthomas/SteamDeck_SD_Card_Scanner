@@ -1,3 +1,7 @@
+//! ## Scanning
+//! 
+//! The scanning module handles reading the game folders on the SD Card.
+
 use crate::app::utils::is_sd_card_line;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -66,29 +70,31 @@ pub fn update_list(list: &mut Vec<Card>) {
         map
     });
 
+    // Get a list of the inserted cards
     let cards_to_scan: Vec<ScanData> = if let Some(cards) = get_card_info() {
         cards
     } else {
+        // If there was an issue getting the list of cards, return without modifying the list
         return;
     };
 
+    // For each SD card found in the lsblk scan
     for card_to_scan in cards_to_scan {
-        // For each SD card found in the lsblk scan
+        // Check to see if this card was scanned before and is already on the saved list
         match cards.get_mut(&card_to_scan.uuid) {
-            // Check to see if this card was scanned before and is already on the saved list
+            // get a mutable reference (card) to the currently inserted SD card list item
             Some(card) => {
-                // get a mutable reference (card) to the currently inserted SD card list item
 
+                // Attempt to scan new card data, if it's successful, update the card with the new scanned info
                 if let Some(scanned_card) = scan_card(ScanData {
                     name: Some(card.name.clone()),
                     ..card_to_scan
                 }) {
-                    // Attempt to scan new card data, if it's successful, update the card with the new scanned info
                     *card = scanned_card
                 }
             }
+            // If the current card isn't in the list, get its data and add it to the HashMap of cards
             None => {
-                // If the current card isn't in the list, get its data and add it to the HashMap of cards
                 let scanned_card = match scan_card(card_to_scan) {
                     Some(scanned_card) => scanned_card,
                     None => {
@@ -108,7 +114,7 @@ pub fn update_list(list: &mut Vec<Card>) {
     });
 }
 
-/// Get the data for the current card, the card's name gets decided from the passed in list
+/// Get the data for the current card
 pub fn scan_card(data: ScanData) -> Option<Card> {
     let name = if let Some(name) = data.name {
         name
@@ -218,11 +224,13 @@ pub fn get_card_data() -> Vec<Card> {
     list
 }
 
+/// Scans the currently inserted cards and adds the data to a new empty list
 fn create_new_card_list() -> Vec<Card> {
     let mut list_of_cards: Vec<Card> = vec![];
     let cards_to_scan = match get_card_info() {
         Some(scan_data_list) => scan_data_list,
-        // None is only returned if there was an error or major issue; should never happen
+        // None is only returned if there was an error or major issue
+        // The list will be empty if there's no SD cards and no errors occurred.
         None => return list_of_cards,
     };
     for card_to_scan in cards_to_scan {
@@ -303,24 +311,24 @@ fn find_other_game_folders(search_dir: &Path) -> (Option<OtherLibrary>, Option<O
     (lutris, heroic)
 }
 
+// TODO restructure this code to recursively call a search instead of the weird match logic currently
 /// Scan for other game folders, uses LibraryType enum as a switch to check for different types of libraries (Lutris or Heroic)
-fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibrary> {
+fn search_and_scan_folder(card_path: &Path, library_type: LibraryType) -> Option<OtherLibrary> {
     let mut library = OtherLibrary::default();
 
-    match scan_folder_for_library(card_path, t) {
-        // Search for the library type in the card's root first,
+    // Search for the library type in the card's root first,
+    match scan_folder_for_library(card_path, library_type) {
+        // If there's 1 found folder for the library type, assume it's the correct one
         Some(dirs) if dirs.len() == 1 => {
-            // If there's 1 found folder for the library type, assume it's the correct one
             library.path = dirs[0].clone();
-        }
-
+        },
+        // If the searched for library wasn't found, search for the 'Other' library type
         Some(dirs) if dirs.len() == 0 => {
-            // If the searched for library wasn't found, search for the 'Other' library type
             match scan_folder_for_library(card_path, LibraryType::Other) {
                 Some(dirs) if dirs.len() >= 1 => {
                     // Now, if we found an 'Other' folder, search it for the library type we're originally searching for
                     for dir in dirs {
-                        match scan_folder_for_library(&dir, t) {
+                        match scan_folder_for_library(&dir, library_type) {
                             Some(dirs) if dirs.len() == 1 => {
                                 library.path = dirs[0].clone();
                                 break;
@@ -337,7 +345,7 @@ fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibra
                     match scan_folder_for_library(card_path, LibraryType::Game) {
                         Some(dirs) if dirs.len() >= 1 => {
                             for dir in dirs {
-                                match scan_folder_for_library(&dir, t) {
+                                match scan_folder_for_library(&dir, library_type) {
                                     Some(dirs) if dirs.len() == 1 => {
                                         library.path = dirs[0].clone();
                                         break;
@@ -357,7 +365,7 @@ fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibra
                 // None(s) are only called when read_dir() encounters an error, we'll assume some sort of IO or file perm issue, doesn't matter
                 None => return None,
             }
-        }
+        },
         // Again, not sure how I'll handle situations where more than one folder is found
         Some(_) => {}
         None => return None,
@@ -376,6 +384,7 @@ fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibra
 /// Scans passed in dir based on passed in LibraryType returning Some(Vec<PathBuf>) with the vec being empty if no folders were found, None is returned in cases of an error
 fn scan_folder_for_library(dir: &Path, t: LibraryType) -> Option<Vec<PathBuf>> {
     Some(
+        // Attempt to read directory, fails for permission issues or if path isn't a dir
         match fs::read_dir(dir) {
             Ok(entry) => entry,
             Err(e) => {
@@ -383,8 +392,9 @@ fn scan_folder_for_library(dir: &Path, t: LibraryType) -> Option<Vec<PathBuf>> {
                 return None;
             }
         }
-        .map(|entry| entry.unwrap())
-        .map(|dir| dir.path())
+        // Convert each element into a path
+        .map(|entry| entry.unwrap().path())
+        // Filter for all the paths that are a directory and are labeled with one of the library names
         .filter(|path| path.is_dir())
         .filter(|dir| {
             dir.file_name()
@@ -399,6 +409,7 @@ fn scan_folder_for_library(dir: &Path, t: LibraryType) -> Option<Vec<PathBuf>> {
                     LibraryType::Game => "game",
                 })
         })
+        // Collect all the found directories into a Vec
         .collect(),
     )
 }
