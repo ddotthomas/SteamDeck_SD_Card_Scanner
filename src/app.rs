@@ -42,7 +42,7 @@ impl Application for App {
     }
 
     fn title(&self) -> String {
-        format!("Steam Deck SD Card Scanner")
+        "Steam Deck SD Card Scanner".to_string()
     }
 
     fn update(&mut self, event: Message) -> Command<Self::Message> {
@@ -105,7 +105,7 @@ impl Application for App {
         controls.append(
             &mut button_panel
                 .into_iter()
-                .map(|button| Element::from(button))
+                .map(Element::from)
                 .collect::<Vec<Element<Message>>>(),
         );
 

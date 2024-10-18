@@ -1,6 +1,5 @@
 use crate::app::utils::is_sd_card_line;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::{
     collections::HashMap,
     fs,
@@ -135,6 +134,7 @@ pub fn scan_card(data: ScanData) -> Option<Card> {
     Some(card)
 }
 
+// TODO make this less hacky and not require lsblk output
 /// Runs the `lsblk` command on the system to get the UUID and Path for the inserted SD Cards
 pub fn get_card_info() -> Option<Vec<ScanData>> {
     // Run the lsblk command to get the currently inserted SD cards
@@ -163,7 +163,7 @@ pub fn get_card_info() -> Option<Vec<ScanData>> {
 
     let card_lines: Vec<String> = s // Find all lines that mention an SD card to be scanned
         .lines()
-        .filter(|line| is_sd_card_line(*line))
+        .filter(|line| is_sd_card_line(line))
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
 
@@ -182,7 +182,7 @@ pub fn get_card_info() -> Option<Vec<ScanData>> {
         }
         .to_string();
 
-        let card_path: PathBuf = match word_iter.map(|path| PathBuf::from(path)).next() {
+        let card_path: PathBuf = match word_iter.map(PathBuf::from).next() {
             Some(path) => path,
             None => continue,
         };
@@ -239,7 +239,7 @@ fn create_new_card_list() -> Vec<Card> {
 
 /// Scans ~/.config/sdscannersave.json, returns None if file doesn't exist or there's a problem parsing the json contents
 pub fn get_saved_json_data() -> Option<Vec<Card>> {
-    let config_loc: PathBuf = PathBuf::from(dirs::config_dir().unwrap()).join("sdscannersave.json");
+    let config_loc: PathBuf = dirs::config_dir().unwrap().join("sdscannersave.json");
     if !config_loc.is_file() {
         // if there's no file at the save path, just assume it doesn't exist and quietly return none
         return None;
@@ -284,8 +284,7 @@ fn find_games(search_dir: &Path) -> Option<Vec<Game>> {
 
 /// Saves the list of Card data into a json file into the user's .config folder. (~/.config/sdscannersave.json)
 pub fn save_data_to_json(list: &Vec<Card>) {
-    let save_data_path: PathBuf =
-        PathBuf::from(dirs::config_dir().unwrap()).join("sdscannersave.json");
+    let save_data_path: PathBuf = dirs::config_dir().unwrap().join("sdscannersave.json");
 
     let s = serde_json::to_string(&list).unwrap();
 
@@ -314,10 +313,10 @@ fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibra
             library.path = dirs[0].clone();
         }
 
-        Some(dirs) if dirs.len() == 0 => {
+        Some(dirs) if dirs.is_empty() => {
             // If the searched for library wasn't found, search for the 'Other' library type
             match scan_folder_for_library(card_path, LibraryType::Other) {
-                Some(dirs) if dirs.len() >= 1 => {
+                Some(dirs) if !dirs.is_empty() => {
                     // Now, if we found an 'Other' folder, search it for the library type we're originally searching for
                     for dir in dirs {
                         match scan_folder_for_library(&dir, t) {
@@ -325,7 +324,7 @@ fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibra
                                 library.path = dirs[0].clone();
                                 break;
                             }
-                            Some(dirs) if dirs.len() == 0 => continue,
+                            Some(dirs) if dirs.is_empty() => continue,
                             // In any case where lutris or heroic returns several folders, not sure what a good solution would be
                             Some(_) => {}
                             None => return None,
@@ -333,16 +332,16 @@ fn search_and_scan_folder(card_path: &Path, t: LibraryType) -> Option<OtherLibra
                     }
                 }
                 // Right now I'm only searching for folders that have the word "games" or "other" for a lutris or heroic folder, this happens if lutris and heroic weren't found at the SD card's root which I imagine should be the common configuration
-                Some(dirs) if dirs.len() == 0 => {
+                Some(dirs) if dirs.is_empty() => {
                     match scan_folder_for_library(card_path, LibraryType::Game) {
-                        Some(dirs) if dirs.len() >= 1 => {
+                        Some(dirs) if !dirs.is_empty() => {
                             for dir in dirs {
                                 match scan_folder_for_library(&dir, t) {
                                     Some(dirs) if dirs.len() == 1 => {
                                         library.path = dirs[0].clone();
                                         break;
                                     }
-                                    Some(dirs) if dirs.len() == 0 => continue,
+                                    Some(dirs) if dirs.is_empty() => continue,
                                     // Again, in any case where lutris or heroic returns several folders, not sure what a good solution would be
                                     Some(_) => {}
                                     None => return None,

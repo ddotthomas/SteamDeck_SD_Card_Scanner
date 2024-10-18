@@ -20,34 +20,36 @@ impl<'a> Page {
     }
 
     fn list(app_data: &'a App) -> Column<'a, Message> {
-        let mut element_list: Vec<Element<Message>> = vec![container(row(vec![
-            text_input("Filter Search...", &app_data.search_term)
-                .on_input(|text_value| Message::SearchInput(text_value))
-                .size(30)
-                .width(Length::FillPortion(2))
-                .padding(4)
+        let mut element_list: Vec<Element<Message>> = vec![
+            // Create a row for the first item in the list, with the search box and card label next to each other
+            container(row(vec![
+                text_input("Filter Search...", &app_data.search_term)
+                    .on_input(Message::SearchInput)
+                    .size(30)
+                    .width(Length::FillPortion(2))
+                    .padding(4)
+                    .into(),
+                container(
+                    text(format!(
+                        "Current Card: {}",
+                        if let Some(card_name) = utils::get_card_name(&app_data.card_data) {
+                            card_name
+                        } else {
+                            String::from("No Card Detected")
+                        }
+                    ))
+                    .size(30),
+                )
+                .padding(2)
+                .width(Length::FillPortion(3))
                 .into(),
-            container(
-                text(format!(
-                    "Current Card: {}",
-                    if let Some(card_name) = utils::get_card_name(&app_data.card_data) {
-                        card_name
-                    } else {
-                        String::from("No Card Detected")
-                    }
-                ))
-                .size(30),
-            )
-            .padding(2)
-            .width(Length::FillPortion(3))
+            ]))
+            .padding(4)
             .into(),
-        ]))
-        .padding(4)
-        .into()];
+        ];
 
-        element_list.push(
-            utils::create_card_and_games_list(app_data).into(),
-        );
+        // Then add the games from the current card and saved data
+        element_list.push(utils::create_card_and_games_list(app_data).into());
 
         utils::highlight_selection(&mut element_list, app_data.select_coords);
 
@@ -75,7 +77,7 @@ impl<'a> Page {
                         |user_input| Message::ChangeCardName(user_input, card.uuid.clone()),
                     )),
                     settings_label(text(&card.uuid[..4])),
-                    settings_label(text(format!("{}", utils::card_games_count(&card)))),
+                    settings_label(text(format!("{}", utils::card_games_count(card)))),
                 ]);
 
             element_list.push(card_settings.into())

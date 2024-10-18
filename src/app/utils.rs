@@ -8,8 +8,8 @@ use iced::{Element, Length};
 use super::App;
 
 /// Returns a copy of the passed in list after it's been filtered by the search term
-pub fn filter_list(list: &Vec<Card>, search_term: &str) -> Vec<Card> {
-    list.into_iter()
+pub fn filter_list(list: &[Card], search_term: &str) -> Vec<Card> {
+    list.iter()
         .map(|card| {
             // Use map to change the contents of each SD card's list by filter by the given search term
             Card {
@@ -64,16 +64,17 @@ pub fn filter_list(list: &Vec<Card>, search_term: &str) -> Vec<Card> {
 
 /// TODO needs to return possibly multiple names for multiple inserted cards
 /// Returns the name of the currently inserted card, returns None if there is no inserted card or there was an issue getting the name.
-pub fn get_card_name(list: &Vec<Card>) -> Option<String> {
+pub fn get_card_name(saved_list_of_cards: &[Card]) -> Option<String> {
     let mut inserted_cards = scanning::get_card_info()?;
 
-    if inserted_cards.len() == 0 {
+    if inserted_cards.is_empty() {
         // If no cards were scanned, then return None
         return None;
     }
 
+    // We get the user's chosen name for the card from the saved card data
     for scanned_card in &mut inserted_cards {
-        scanned_card.name = list
+        scanned_card.name = saved_list_of_cards
             .iter()
             .filter(|&card| card.uuid == scanned_card.uuid)
             // Filter for the card in the list with the same uuid as the inserted card
@@ -81,7 +82,7 @@ pub fn get_card_name(list: &Vec<Card>) -> Option<String> {
             .next();
     }
 
-    if inserted_cards.len() >= 1 {
+    if !inserted_cards.is_empty() {
         inserted_cards[0].name.clone()
     } else {
         None
@@ -89,13 +90,8 @@ pub fn get_card_name(list: &Vec<Card>) -> Option<String> {
 }
 
 /// Converts the list data into an Iced GUI list of the cards and their games
-/// Also provides the search functionality by filtering the list data by the `search_term`
-/// The `search_term` is is provided by the user in search bar
-/// 
-/// 
-pub fn create_card_and_games_list<'a>(
-    app_data: &'a App,
-) -> Scrollable<'a, Message> {
+/// Also provides the search functionality by filtering the list data by the search term in `app_data`
+pub fn create_card_and_games_list(app_data: &'_ App) -> Scrollable<'_, Message> {
     let mut return_list: Vec<Element<Message>> = vec![];
 
     let list = if app_data.search_term.is_empty() {
@@ -130,12 +126,7 @@ pub fn create_card_and_games_list<'a>(
             if card.heroic.is_some() || card.lutris.is_some() {
                 // Label the Steam Library if there's also Non Steam Libraries
                 return_list.push(
-                    container(
-                        text(format!("Steam Games"))
-                            .style(theming::STEAM_COLOR)
-                            .size(40),
-                    )
-                    .into(),
+                    container(text("Steam Games").style(theming::STEAM_COLOR).size(40)).into(),
                 );
                 return_list.push(
                     container(text(""))
@@ -152,7 +143,7 @@ pub fn create_card_and_games_list<'a>(
                 card.games
                     .iter()
                     .fold(column![], |column: Column<Message>, game: &Game| {
-                        column.push(text(format!("{}", game.name)).size(30))
+                        column.push(text(game.name.to_string()).size(30))
                     })
                     .into(),
             );
@@ -163,7 +154,7 @@ pub fn create_card_and_games_list<'a>(
                 // If there were no games found or they were all filtered out by the search,
                 // don't add any elements to differentiate the other libraries
                 return_list.push(
-                    text(format!("Lutris Library"))
+                    text("Lutris Library")
                         .style(theming::LUTRIS_COLOR)
                         .size(40)
                         .into(),
@@ -183,7 +174,7 @@ pub fn create_card_and_games_list<'a>(
                         .games
                         .iter()
                         .fold(column![], |column: Column<Message>, game: &Game| {
-                            column.push(text(format!("{}", game.name)).size(30))
+                            column.push(text(game.name.to_string()).size(30))
                         })
                         .into(),
                 );
@@ -193,7 +184,7 @@ pub fn create_card_and_games_list<'a>(
         if let Some(library) = card.heroic {
             if !library.games.is_empty() {
                 return_list.push(
-                    text(format!("Heroic Library"))
+                    text("Heroic Library")
                         .style(theming::HEROIC_COLOR)
                         .size(40)
                         .into(),
@@ -211,7 +202,7 @@ pub fn create_card_and_games_list<'a>(
                         .games
                         .iter()
                         .fold(column![], |column: Column<Message>, game: &Game| {
-                            column.push(text(format!("{}", game.name)).size(30))
+                            column.push(text(game.name.to_string()).size(30))
                         })
                         .into(),
                 );
@@ -285,14 +276,15 @@ pub fn card_games_count(card: &Card) -> usize {
 }
 
 /// The default path to the SD card's root folder before v3.5 of SteamOS
-pub const OLD_SD_ROOT: &'static str = "/run/media/mmcblk0p1";
+pub const OLD_SD_ROOT: &str = "/run/media/mmcblk0p1";
 /// The new mount folder for SD cards after v3.5 of SteamOS
-pub const NEW_SD_PATH: &'static str = "/run/media/deck";
+pub const NEW_SD_PATH: &str = "/run/media/deck";
 
 pub fn is_sd_card_line(line: &str) -> bool {
     line.contains(OLD_SD_ROOT) | line.contains(NEW_SD_PATH) & line.contains("mmcblk")
 }
 
+#[derive(Copy, Clone)]
 pub struct SelectCoords {
     pub x: usize,
     pub y: usize,
@@ -331,7 +323,7 @@ impl App {
             } else {
                 match self.current_page {
                     // The Home page can scroll down as long as the list
-                    0 => get_game_list_length(&self) - 1,
+                    0 => get_game_list_length(self) - 1,
                     // The settings page has 1 card per row
                     1 => self.card_data.len(),
                     _ => usize::MAX,
@@ -394,7 +386,5 @@ fn get_game_list_length(app_data: &App) -> usize {
 }
 
 pub fn highlight_selection(element_list: &mut Vec<Element<Message>>, select_coords: SelectCoords) {
-    if select_coords.x > 0 {
-        
-    }
+    if select_coords.x > 0 {}
 }
